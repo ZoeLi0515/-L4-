@@ -1,0 +1,70 @@
+Q5_INDAOV2.raw <- read.csv(file.choose(), header=TRUE) 
+str(Q5_INDAOV2.raw)
+
+###轉變資料型態
+Q5_INDAOV2.raw$height <-as.factor(Q5_INDAOV2.raw$height) 
+Q5_INDAOV2.raw$house <-as.factor(Q5_INDAOV2.raw$house) 
+str(Q5_INDAOV2.raw)
+
+###看數據資訊
+summary(Q5_INDAOV2.raw)
+
+###假設檢驗
+##樣本常態檢驗
+library(psych)
+describe(Q5_INDAOV2.raw)
+
+##變異數同質檢驗
+#height:
+bartlett.test(score ~ height, data=Q5_INDAOV2.raw)
+#house:
+library(car)
+leveneTest(score ~ house, data=Q5_INDAOV2.raw)
+
+###進行two-way ANOVA
+Q5_INDAOV2.op <- aov(score ~ height*house, data=Q5_INDAOV2.raw) 
+summary(Q5_INDAOV2.op)
+
+###mean plot
+library(car)
+library(sandwich)
+library(RcmdrMisc)
+with(Q5_INDAOV2.raw,plotMeans(score,height,house,error.bars="se")) 
+with(Q5_INDAOV2.raw,plotMeans(score,house,height,error.bars="none"))
+
+###Split HIT:height HSE:house
+FIX.HIT <-split(Q5_INDAOV2.raw,Q5_INDAOV2.raw$height) 
+FIX.HIT
+FIX.HSE <-split(Q5_INDAOV2.raw,Q5_INDAOV2.raw$house) 
+FIX.HSE
+
+###單純主要效果檢驗1：固定身高情況下學院的差異
+##height:
+FIX.HIT_over.op <- aov(score ~ house, data=FIX.HIT$over_170) 
+summary(FIX.HIT_over.op) #正確F值=7.644/4.381=1.744807
+FIX.HIT_under.op <- aov(score ~ house, data=FIX.HIT$under_169) 
+summary(FIX.HIT_under.op) #正確F值=15.778/4.381=3.601461
+##height的p值計算:
+pf(1.74, df1=3, df2=14,lower.tail=FALSE)
+pf(3.60, df1=3, df2=14,lower.tail=FALSE) #有顯著
+
+###單純主要效果檢驗2：固定學院的情況下身高的差異
+##house:
+FIX.HSE_G.op <- aov(score ~ height ,data=FIX.HSE$Gryffindor) 
+summary(FIX.HSE_G.op) #正確F值=16.667/4.381=3.804383
+FIX.HSE_H.op <- aov(score ~ height ,data=FIX.HSE$Hufflepuff) 
+summary(FIX.HSE_H.op) #正確F值=13.500/4.381=0.7989044
+FIX.HSE_R.op <- aov(score ~ height ,data=FIX.HSE$Ravenclaw) 
+summary(FIX.HSE_R.op) #正確F值=38.53/4.381=8.794796
+FIX.HSE_S.op <- aov(score ~ height ,data=FIX.HSE$Slytherin) 
+summary(FIX.HSE_S.op) #正確F值=22.533/4.381=5.143346
+##house的p值計算:
+pf(3.80, df1=1, df2=14,lower.tail=FALSE)
+pf(0.80, df1=1, df2=14,lower.tail=FALSE)
+pf(8.80, df1=1, df2=14,lower.tail=FALSE) #有顯著
+pf(5.14, df1=1, df2=14,lower.tail=FALSE) #有顯著
+
+###Bonus題：三種平方和檢驗
+library(car)
+Anova(Q5_INDAOV2.op, type = "2")
+Anova(Q5_INDAOV2.op, type = "3")
